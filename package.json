@@ -1,0 +1,29 @@
+{
+  "name": "pair-o-matic-5000",
+  "version": "1.0.0",
+  "description": "Student pairing slack bot",
+  "main": "pairbot.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MCRcodes/pairbot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MCRcodes/pairbot/issues"
+  },
+  "homepage": "https://github.com/MCRcodes/pairbot#readme",
+  "contributors": [
+    {
+      "name": "Manchester Codes"
+    },
+    {
+      "name": "Michael Harrison"
+    }
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "@slack/client": "^4.1.0",
+    "dotenv": "^5.0.1",
+    "fs-extra": "^5.0.0",
+    "moment": "^2.22.0"
+  }
+}
