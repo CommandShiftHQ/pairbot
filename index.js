@@ -1,27 +1,35 @@
-const fs = require('fs-extra');
-const path = require('path');
+const AWS = require('aws-sdk');
 const moment = require('moment');
 const Slack = require('@slack/client');
 
-require('dotenv').config();
-
-const cohortsPath = path.join(__dirname, 'cohorts.json');
-const studentsPath = path.join(__dirname, 'students.json');
-
-const parse = data => JSON.parse(data);
+const DynamoDB = new AWS.DynamoDB.DocumentClient();
 
 const log = data => console.log(data) || data;
 
-const readFile = file => fs.readFile(file, 'utf8').then(parse);
-
 const shouldRunPairings = cohort => (
-  cohort.isActive && // fix this to use timestamps
   cohort.slackChannel &&
   cohort.pairSchedule.some(scheduledDay => scheduledDay === moment().day())
 );
 
-const findStudentsByCohort = cohort => readFile(studentsPath)
-  .then(students => students.filter(student => student.cohortId === cohort.id && student.isActive));
+const findStudentsByCohort = cohort => new Promise((resolve, reject) => {
+  DynamoDB.query({
+    TableName: 'students',
+    IndexName: 'cohort-index',
+    KeyConditionExpression: '#cohortId = :cohortId',
+    ExpressionAttributeNames: {
+      '#cohortId': 'cohortId',
+    },
+    ExpressionAttributeValues: {
+      ':cohortId': cohort.id,
+    },
+  }, (error, data) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(data.Items);
+    }
+  })
+}).then(students => students.filter(student => student.isActive));
 
 const calculatePairingIndex = (cohort) => {
   const now = moment();
@@ -73,16 +81,33 @@ const sendSlackNotification = (cohort) => {
     icon_emoji: ':robot_face:',
     username: 'Pair-o-matic 5000',
     text: formatPairs(cohort.pairs),
-  });
+  })
+  .catch(log);
 }
 
-const pairBot = () => {
-  readFile(cohortsPath)
-    .then(cohorts => cohorts.filter(shouldRunPairings))
-    .then(cohorts => Promise.all(cohorts.map(pairStudentsInCohort)))
-    .then((cohorts) => {
-      cohorts.forEach(sendSlackNotification);
-    });
-}
+const pairBot = () => new Promise((resolve, reject) => {
+  DynamoDB.scan({
+    TableName: 'cohorts',
+    FilterExpression: '#isActive = :isActive',
+    ExpressionAttributeNames: {
+      '#isActive': 'isActive',
+    },
+    ExpressionAttributeValues: {
+      ':isActive': true,
+    },
+  }, (error, data) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(data.Items);
+    }
+  })
+})
+  .then(cohorts => cohorts.filter(shouldRunPairings))
+  .then(cohorts => Promise.all(cohorts.map(pairStudentsInCohort)))
+  .then((cohorts) => {
+    cohorts.forEach(sendSlackNotification);
+  })
+  .catch(log);
 
-pairBot();
+exports.handler = pairBot;
