@@ -1,6 +1,3 @@
 .DS_Store
 node_modules
-cohorts.json
-students.json
-.env
-
+pairbot.zip

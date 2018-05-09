@@ -10,6 +10,10 @@
   "bugs": {
     "url": "https://github.com/MCRcodes/pairbot/issues"
   },
+  "scripts": {
+    "build": "zip -r pairbot.zip index.js package.json node_modules/",
+    "deploy": "aws lambda update-function-code --function-name pairbot --zip-file fileb://pairbot.zip"
+  },
   "homepage": "https://github.com/MCRcodes/pairbot#readme",
   "contributors": [
     {
@@ -22,8 +26,7 @@
   "license": "ISC",
   "dependencies": {
     "@slack/client": "^4.1.0",
-    "dotenv": "^5.0.1",
-    "fs-extra": "^5.0.0",
+    "aws-sdk": "^2.235.1",
     "moment": "^2.22.0"
   }
 }
